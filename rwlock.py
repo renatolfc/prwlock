@@ -60,20 +60,30 @@ for function, argtypes in API:
 
 class RWLock(object):
     def __init__(self):
+        self.__setup(None)
+
+    def __setup(self, _fd=None):
         try:
             # Define these guards so we know which attribution has failed
             buf, lock, lockattr, fd = None, None, None, None
 
-            # Create a temporary file with an actual file descriptor, so that
-            # child processes can receive the lock via apply from the
-            # multiprocessing module
-            fd, name = tempfile.mkstemp()
-            os.write(fd, b'\0' * mmap.PAGESIZE)
+            if _fd:
+                # We're being called from __setstate__, all we have to do is
+                # load the file descriptor of the backing file
+                fd = _fd
+            else:
+                # Create a temporary file with an actual file descriptor, so
+                # that child processes can receive the lock via apply from the
+                # multiprocessing module
+                fd, name = tempfile.mkstemp()
+                os.write(fd, b'\0' * mmap.PAGESIZE)
 
             # mmap allocates page sized chunks, and the data structures we
             # use are smaller than a page. Therefore, we request a whole
             # page
             buf = mmap.mmap(fd, mmap.PAGESIZE, mmap.MAP_SHARED)
+            if _fd:
+                buf.seek(0)
 
             # Use the memory we just obtained from mmap and obtain pointers
             # to that data
@@ -83,15 +93,21 @@ class RWLock(object):
             tmplockattr = pthread_rwlockattr_t.from_buffer(buf, offset)
             lockattr_p = ctypes.byref(tmplockattr)
 
-            # Initialize the rwlock attributes and make it process shared
-            librt.pthread_rwlockattr_init(lockattr_p)
-            lockattr = tmplockattr
-            librt.pthread_rwlockattr_setpshared(lockattr_p,
-                                                PTHREAD_PROCESS_SHARED)
+            if _fd is None:
+                # Initialize the rwlock attributes and make it process shared
+                librt.pthread_rwlockattr_init(lockattr_p)
+                lockattr = tmplockattr
+                librt.pthread_rwlockattr_setpshared(lockattr_p,
+                                                    PTHREAD_PROCESS_SHARED)
 
-            # Initialize the rwlock
-            librt.pthread_rwlock_init(lock_p, lockattr_p)
-            lock = tmplock
+                # Initialize the rwlock
+                librt.pthread_rwlock_init(lock_p, lockattr_p)
+                lock = tmplock
+            else:
+                # The data is already initialized in the mmap. We only have to
+                # point to it
+                lockattr = tmplockattr
+                lock = tmplock
 
             # Finally initialize this instance's members
             self._fd = fd
@@ -141,10 +157,30 @@ class RWLock(object):
         # Everything else can be recalculated later.
         return {'_fd': self._fd}
 
-    def __del__(self):
+    def __setstate__(self, state):
+        self.__setup(state['_fd'])
+
+    def _del_lockattr(self):
         librt.pthread_rwlockattr_destroy(self._lockattr_p)
         self._lockattr, self._lockattr_p = None, None
+
+    def _del_lock(self):
         librt.pthread_rwlock_destroy(self._lock_p)
         self._lock, self._lock_p = None, None
+
+    def _del_buf(self):
         self._buf.close()
-        os.close(self._fd)
+        self._buf = None
+
+    def __del__(self):
+        for name in '_lockattr _lock _buf'.split():
+            attr = getattr(self, name, None)
+            if attr is not None:
+                func = getattr(self, '_del{}'.format(name))
+                func()
+        try:
+            os.close(self._fd)
+        except OSError:
+            # Nothing we can do. We opened the file descriptor, we have to
+            # close it. If we can't, all bets are off.
+            pass
