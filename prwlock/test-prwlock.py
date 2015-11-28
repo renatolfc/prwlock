@@ -1,7 +1,7 @@
 import os
 import time
 
-from rwlock import RWLock
+from prwlock import RWLock
 from multiprocessing import Pool
 
 rwlock = RWLock()
