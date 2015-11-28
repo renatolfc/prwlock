@@ -43,7 +43,7 @@ API = [
 def error_check(result, func, arguments):
     name = func.__name__
     if result != 0:
-        error = os.strerror(ctypes.get_errno())
+        error = os.strerror(result)
         raise OSError(result, '{} failed {}'.format(name, error))
 
 
