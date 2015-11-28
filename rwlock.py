@@ -5,6 +5,7 @@ import os        # For strerror
 import mmap      # For setting up a shared memory region
 import ctypes    # For doing the actual wrapping of librt & rwlock
 import platform  # To figure which architecture we're running in
+import tempfile  # To open a file to back our mmap
 
 from ctypes.util import find_library
 
@@ -61,12 +62,18 @@ class RWLock(object):
     def __init__(self):
         try:
             # Define these guards so we know which attribution has failed
-            buf, lock, lockattr = None, None, None
+            buf, lock, lockattr, fd = None, None, None, None
+
+            # Create a temporary file with an actual file descriptor, so that
+            # child processes can receive the lock via apply from the
+            # multiprocessing module
+            fd, name = tempfile.mkstemp()
+            os.write(fd, b'\0' * mmap.PAGESIZE)
 
             # mmap allocates page sized chunks, and the data structures we
             # use are smaller than a page. Therefore, we request a whole
             # page
-            buf = mmap.mmap(-1, mmap.PAGESIZE, mmap.MAP_SHARED)
+            buf = mmap.mmap(fd, mmap.PAGESIZE, mmap.MAP_SHARED)
 
             # Use the memory we just obtained from mmap and obtain pointers
             # to that data
@@ -87,6 +94,7 @@ class RWLock(object):
             lock = tmplock
 
             # Finally initialize this instance's members
+            self._fd = fd
             self._buf = buf
             self._lock = lock
             self._lock_p = lock_p
@@ -112,6 +120,12 @@ class RWLock(object):
                     buf.close()
                 except:
                     pass
+            if fd:
+                try:
+                    os.close(fd)
+                except:
+                    pass
+            raise
 
     def acquire_read(self):
         librt.pthread_rwlock_rdlock(self._lock_p)
@@ -122,9 +136,15 @@ class RWLock(object):
     def release(self):
         librt.pthread_rwlock_unlock(self._lock_p)
 
+    def __getstate__(self):
+        # We only care about the file descriptor of the memory-mapped file.
+        # Everything else can be recalculated later.
+        return {'_fd': self._fd}
+
     def __del__(self):
         librt.pthread_rwlockattr_destroy(self._lockattr_p)
         self._lockattr, self._lockattr_p = None, None
         librt.pthread_rwlock_destroy(self._lock_p)
         self._lock, self._lock_p = None, None
         self._buf.close()
+        os.close(self._fd)
