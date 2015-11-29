@@ -9,25 +9,29 @@ import tempfile  # To open a file to back our mmap
 
 from ctypes.util import find_library
 
-# Loads the library in which the functions we're wrapping are defined
-librt = ctypes.CDLL(find_library('rt'), use_errno=True)
-
-if platform.system() == 'Linux':
-    PTHREAD_PROCESS_SHARED = 1
-    if platform.architecture()[0] == '64bit':
-        pthread_rwlock_t = ctypes.c_byte * 56
-    elif platform.architecture()[0] == '32bit':
-        pthread_rwlock_t = ctypes.c_byte * 32
-    else:
-        pthread_rwlock_t = ctypes.c_byte * 44
-elif platform.system() == 'FreeBSD':
+if platform.syste() == 'Darwin':
+    # XXX: This is based on code found on the Internet and might be wrong...
+    librt = ctypes.CDLL(find_library('c'), use_errno=True)
     PTHREAD_PROCESS_SHARED = 0
-    pthread_rwlock_t = ctypes.c_byte * 8
+    pthread_rwlock_t = ctypes.c_byte * 200
+    pthread_rwlockattr_t = ctypes.c_byte * 24
 else:
-    raise Exception("Unsupported operating system.")
-
-pthread_rwlockattr_t = ctypes.c_byte * 8
-
+    # Loads the library in which the functions we're wrapping are defined
+    librt = ctypes.CDLL(find_library('rt'), use_errno=True)
+    pthread_rwlockattr_t = ctypes.c_byte * 8
+    if platform.system() == 'Linux':
+        PTHREAD_PROCESS_SHARED = 1
+        if platform.architecture()[0] == '64bit':
+            pthread_rwlock_t = ctypes.c_byte * 56
+        elif platform.architecture()[0] == '32bit':
+            pthread_rwlock_t = ctypes.c_byte * 32
+        else:
+            pthread_rwlock_t = ctypes.c_byte * 44
+    elif platform.system() == 'FreeBSD':
+        PTHREAD_PROCESS_SHARED = 0
+        pthread_rwlock_t = ctypes.c_byte * 8
+    else:
+        raise Exception("Unsupported operating system.")
 
 pthread_rwlockattr_t_p = ctypes.POINTER(pthread_rwlockattr_t)
 pthread_rwlock_t_p = ctypes.POINTER(pthread_rwlock_t)
