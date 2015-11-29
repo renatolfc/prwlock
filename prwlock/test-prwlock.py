@@ -1,7 +1,9 @@
+from __future__ import print_function
+
 import os
 import time
 
-from prwlock import RWLock
+from .prwlock import RWLock
 from multiprocessing import Pool
 
 rwlock = RWLock()
@@ -29,4 +31,3 @@ if __name__ == '__main__':
     rwlock.release()
     pool.close()
     pool.join()
-    
