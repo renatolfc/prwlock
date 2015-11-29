@@ -9,7 +9,7 @@ import tempfile  # To open a file to back our mmap
 
 from ctypes.util import find_library
 
-if platform.syste() == 'Darwin':
+if platform.system() == 'Darwin':
     # XXX: This is based on code found on the Internet and might be wrong...
     librt = ctypes.CDLL(find_library('c'), use_errno=True)
     PTHREAD_PROCESS_SHARED = 0
