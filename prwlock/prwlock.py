@@ -30,6 +30,9 @@ else:
     elif platform.system() == 'FreeBSD':
         PTHREAD_PROCESS_SHARED = 0
         pthread_rwlock_t = ctypes.c_byte * 8
+    elif platform.system() == 'OpenBSD':
+        PTHREAD_PROCESS_SHARED = 1
+        pthread_rwlock_t = ctypes.c_byte * 8
     else:
         raise Exception("Unsupported operating system.")
 
