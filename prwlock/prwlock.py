@@ -61,6 +61,11 @@ for function, argtypes in API:
 class RWLock(object):
     def __init__(self):
         self.__setup(None)
+        # Note we don't have to lock accesses to self.nlocks, since RWLocks are
+        # supposed to be used only for coordinating multiple *processes*. In
+        # which case each process will have its own private copy of the RWLock.
+        self.nlocks = 0
+        self.pid = os.getpid()
 
     def __setup(self, _fd=None):
         try:
@@ -145,20 +150,34 @@ class RWLock(object):
 
     def acquire_read(self):
         librt.pthread_rwlock_rdlock(self._lock_p)
+        self.nlocks += 1
 
     def acquire_write(self):
         librt.pthread_rwlock_wrlock(self._lock_p)
+        self.nlocks += 1
 
     def release(self):
+        if self.nlocks == 0:
+            raise ValueError(
+                'Tried to release a released lock'
+            )
         librt.pthread_rwlock_unlock(self._lock_p)
+        self.nlocks -= 1
 
     def __getstate__(self):
-        # We only care about the file descriptor of the memory-mapped file.
-        # Everything else can be recalculated later.
-        return {'_fd': self._fd}
+        return {
+                '_fd': self._fd,
+                'pid': self.pid,
+                'nlocks': self.nlocks,
+                }
 
     def __setstate__(self, state):
         self.__setup(state['_fd'])
+        self.pid = os.getpid()
+        if self.pid == state['pid']:
+            self.nlocks = state['nlocks']
+        else:
+            self.nlocks = 0
 
     def _del_lockattr(self):
         librt.pthread_rwlockattr_destroy(self._lockattr_p)
