@@ -13,18 +13,21 @@ from ctypes.util import find_library
 librt = ctypes.CDLL(find_library('rt'), use_errno=True)
 
 if platform.system() == 'Linux':
+    PTHREAD_PROCESS_SHARED = 1
     if platform.architecture()[0] == '64bit':
         pthread_rwlock_t = ctypes.c_byte * 56
     elif platform.architecture()[0] == '32bit':
         pthread_rwlock_t = ctypes.c_byte * 32
     else:
         pthread_rwlock_t = ctypes.c_byte * 44
+elif platform.system() == 'FreeBSD':
+    PTHREAD_PROCESS_SHARED = 0
+    pthread_rwlock_t = ctypes.c_byte * 8
 else:
     raise Exception("Unsupported operating system.")
 
 pthread_rwlockattr_t = ctypes.c_byte * 8
 
-PTHREAD_PROCESS_SHARED = 1
 
 pthread_rwlockattr_t_p = ctypes.POINTER(pthread_rwlockattr_t)
 pthread_rwlock_t_p = ctypes.POINTER(pthread_rwlock_t)
