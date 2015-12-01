@@ -69,11 +69,9 @@ class RWLockTestCase(BaseTestCase):
         self.rwlock.release()
         pool.close()
         pool.join()
-        print(self.rwlock.pid)
         self.assertTrue(all([r.successful() for r in ret]))
 
 def f(rwlock):
-    print(rwlock.pid)
     for i in range(2):
         rwlock.acquire_read()
         time.sleep(1)
