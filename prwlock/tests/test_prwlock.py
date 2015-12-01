@@ -6,19 +6,24 @@ import time
 import pickle
 import unittest
 
-from ..prwlock import RWLock
+from prwlock import prwlock
 from multiprocessing import Pool
+
+OLD_PTHREAD_PROCESS_SHARED = prwlock.PTHREAD_PROCESS_SHARED
 
 class BaseTestCase(unittest.TestCase):
     def setUp(self):
-        self.rwlock = RWLock()
+        self.rwlock = prwlock.RWLock()
+
+    def tearDown(self):
+        prwlock.PTHREAD_PROCESS_SHARED = OLD_PTHREAD_PROCESS_SHARED
 
 class RWLockTestCase(BaseTestCase):
 
     def allocate_infinitely(self):
         def gen():
             while True:
-                yield RWLock()
+                yield prwlock.RWLock()
         return [r for r in gen()]
 
     def test_double_release(self):
@@ -70,6 +75,11 @@ class RWLockTestCase(BaseTestCase):
         pool.close()
         pool.join()
         self.assertTrue(all([r.successful() for r in ret]))
+
+    def test_wrong_constant(self):
+        prwlock.PTHREAD_PROCESS_SHARED = 0xbeef
+        with self.assertRaises(OSError):
+            prwlock.RWLock()
 
 def f(rwlock):
     for i in range(2):
