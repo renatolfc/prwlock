@@ -211,7 +211,8 @@ class RWLock(object):
                 func = getattr(self, '_del{}'.format(name))
                 func()
         try:
-            os.close(self._fd)
+            if hasattr(self, '_fd'):
+                os.close(self._fd)
         except OSError:
             # Nothing we can do. We opened the file descriptor, we have to
             # close it. If we can't, all bets are off.
