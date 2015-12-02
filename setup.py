@@ -24,7 +24,7 @@ setup(
     version=prwlock.__version__,
     description='Native process-shared rwlock support for Python',
     long_description=long_description,
-    url='https://github.com/trovao/prwlock',
+    url='https://bitbucket.org/prwlock/prwlock',
     author='Renato Cunha',
     author_email='erangb@erangbphaun.pbz',
     license='MIT',
