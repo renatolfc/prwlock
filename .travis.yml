@@ -5,6 +5,6 @@ python:
     - "3.5"
     - "nightly"
 install: "pip install -r dev-requirements.txt"
-script: "coverage run setup.py test"
+script: "coverage run --source=./prwlock setup.py test"
 after_success:
     - coveralls
