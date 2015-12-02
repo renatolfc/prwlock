@@ -26,6 +26,7 @@ setup(
     long_description=long_description,
     url='https://github.com/trovao/prwlock',
     author='Renato Cunha',
+    author_email='erangb@erangbphaun.pbz',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
