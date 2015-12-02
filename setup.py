@@ -42,6 +42,6 @@ setup(
         'Operating System :: MacOS :: MacOS X',
     ],
     keywords='rwlock posix process-shared process',
-    packages=find_packages(exclude=['prwlock.tests']),
+    packages=find_packages(),
     test_suite='prwlock.tests',
 )
