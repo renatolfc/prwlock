@@ -63,6 +63,9 @@ class RWLockTestCase(BaseTestCase):
             self.assertTrue(False)
         except mmap.error:
             self.assertTrue(True)
+        except OSError:
+            # We might hit a limit of open files before exhausting memory
+            self.assertTrue(True)
 
     def test_child_interaction(self):
         children = 10
