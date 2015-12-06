@@ -9,12 +9,16 @@ import tempfile  # To open a file to back our mmap
 
 from ctypes.util import find_library
 
+_is_darwin = False
+_dw_lock_initialized = (ctypes.c_byte * 4)(75, 76, 87, 82)
+
 if platform.system() == 'Darwin':
     # XXX: This is based on code found on the Internet and might be wrong...
     librt = ctypes.CDLL(find_library('c'), use_errno=True)
-    PTHREAD_PROCESS_SHARED = 0
+    PTHREAD_PROCESS_SHARED = 1
     pthread_rwlock_t = ctypes.c_byte * 200
     pthread_rwlockattr_t = ctypes.c_byte * 24
+    _is_darwin = True
 else:
     # Loads the library in which the functions we're wrapping are defined
     librt = ctypes.CDLL(find_library('rt'), use_errno=True)
@@ -197,7 +201,11 @@ class RWLock(object):
         self._lockattr, self._lockattr_p = None, None
 
     def _del_lock(self):
-        librt.pthread_rwlock_destroy(self._lock_p)
+        if _is_darwin is not True or self._lock[:4] == _dw_lock_initialized[:]:
+            for i in range(self.nlocks):
+                self.release()
+            
+            librt.pthread_rwlock_destroy(self._lock_p)
         self._lock, self._lock_p = None, None
 
     def _del_buf(self):
