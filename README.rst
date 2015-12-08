@@ -52,3 +52,11 @@ such as in the code block below.
     pool = Pool(processes=children)
     for child in range(children):
         pool.apply_async(f, [r])
+
+Changes
+-------
+
+* 0.1.1: Fixed the value of the `PTHREAD_PROCESS_SHARED` constant for Mac OS
+  X. Also added a check to prevent double destruction of the underlying lock
+  on Mac OS X.
+* 0.1.0: Initial release
