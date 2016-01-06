@@ -1,18 +1,15 @@
 from __future__ import print_function
 
-import os
-import mmap
 import time
 import pickle
 import unittest
-import random
 
-from prwlock import wrwlock
+import prwlock
 from multiprocessing import Pool
 
 class BaseTestCase(unittest.TestCase):
     def setUp(self):
-        self.rwlock = wrwlock.RWLock()
+        self.rwlock = prwlock.RWLock()
 
 
 class RWLockTestCase(BaseTestCase):

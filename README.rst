@@ -21,7 +21,7 @@ enough to get an RWLock instance.
 
 .. code-block:: python
 
-    from prwlock.prwlock import RWLock
+    from prwlock import RWLock
 
     rwlock = RWLock()
 
@@ -36,7 +36,7 @@ such as in the code block below.
     import time
 
     from multiprocessing import Pool
-    from prwlock.prwlock import RWLock
+    from prwlock import RWLock
     def f(rwlock):
         for i in range(2):
             print(os.getpid(), 'Acquiring read lock')

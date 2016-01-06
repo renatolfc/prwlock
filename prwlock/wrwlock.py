@@ -30,7 +30,7 @@ for function, argtypes, restype in API_W32:
 
 INFINITE = 0xFFFFFFFF
 
-# By default, mutexes are not not inherited when a new process is created.
+# By default, mutexes are not inherited when a new process is created.
 # We need to provide security attributes that allow the mutexes to be
 # shared by the synchronized processes. For more detail, see:
 # https://msdn.microsoft.com/en-us/library/windows/desktop/aa379560(v=vs.85).aspx
@@ -39,7 +39,7 @@ class _SECURITY_ATTRIBUTES(Structure):
                ("lpSecurityDescriptor", wintypes.LPVOID),
                ("bInheritHandle", wintypes.BOOL)]
 
-class RWLock(object):
+class RWLockWindows(object):
     def __init__(self):
         self.__setup()
         self.pid = os.getpid()
@@ -51,12 +51,12 @@ class RWLock(object):
 
             if _mtag:
                 # We're being called from __setstate__, all we have to do is
-                # load the memory tag to the windows shared memory
+                # load the memory tag for the windows shared memory
                 mtag = _mtag
             else:
                 mtag = "rwlock-%d" % os.getpid()
 
-            # By default file descriptors are not shared across processes on Windows,
+            # File descriptors are not shared across processes on Windows,
             # but an alternative is to use named shared memory:
             # https://msdn.microsoft.com/en-us/library/windows/desktop/aa366551(v=vs.85).aspx
             # Setting the underlying mmap fd to 0, will force it to use named

@@ -9,25 +9,11 @@ import tempfile  # To open a file to back our mmap
 
 from ctypes.util import find_library
 
-# A call to pthread_rwlock_destroy on Mac OS X raises an exception
-# when providing a pointer to a pthread_rwlock_t that has already been
-# destroyed. The pthread_rwlock_t struct under OS X maintains a
-# signature that defines whether the lock is initialized or destroyed:
-# struct _opaque_pthread_rwlock_t {
-#        long __sig;
-#        char __opaque[__PTHREAD_RWLOCK_SIZE__];
-# };
-# Hence, we must test whether the __sig of a rwlock is not set
-# to zero before attempting to destroy it.
-_is_darwin = False
-
 if platform.system() == 'Darwin':
-    # XXX: This is based on code found on the Internet and might be wrong...
     librt = ctypes.CDLL(find_library('c'), use_errno=True)
     PTHREAD_PROCESS_SHARED = 1
     pthread_rwlock_t = ctypes.c_byte * 200
     pthread_rwlockattr_t = ctypes.c_byte * 24
-    _is_darwin = True
 else:
     # Loads the library in which the functions we're wrapping are defined
     librt = ctypes.CDLL(find_library('rt'), use_errno=True)
@@ -84,7 +70,7 @@ for function, argtypes in API:
     augment_function(librt, function, argtypes)
 
 
-class RWLock(object):
+class RWLockPosix(object):
     def __init__(self):
         self.__setup(None)
         # Note we don't have to lock accesses to self.nlocks, since RWLocks are
@@ -210,12 +196,10 @@ class RWLock(object):
         self._lockattr, self._lockattr_p = None, None
 
     def _del_lock(self):
-        # Under Mac OS X, it must check whether the lock's is initialized
-        if not _is_darwin or self._lock[0] != 0:
-            for i in range(self.nlocks):
-                self.release()
+        for i in range(self.nlocks):
+            self.release()
 
-            librt.pthread_rwlock_destroy(self._lock_p)
+        librt.pthread_rwlock_destroy(self._lock_p)
         self._lock, self._lock_p = None, None
 
     def _del_buf(self):
@@ -235,3 +219,21 @@ class RWLock(object):
             # Nothing we can do. We opened the file descriptor, we have to
             # close it. If we can't, all bets are off.
             pass
+
+
+# A call to pthread_rwlock_destroy on Mac OS X raises an exception
+# when providing a pointer to a pthread_rwlock_t that has already been
+# destroyed. The pthread_rwlock_t struct under OS X maintains a
+# signature that defines whether the lock is initialized or destroyed:
+# struct _opaque_pthread_rwlock_t {
+#        long __sig;
+#        char __opaque[__PTHREAD_RWLOCK_SIZE__];
+# };
+# Hence, we must test whether the __sig of a rwlock is not set
+# to zero before attempting to destroy it.
+class RWLockOSX(RWLockPosix):
+
+    def _del_lock(self):
+        # Under Mac OS X, it must check whether the lock's is initialized
+        if self._lock[0] != 0:
+            RWLockPosix._del_lock(self)

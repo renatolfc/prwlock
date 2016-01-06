@@ -6,17 +6,17 @@ import time
 import pickle
 import unittest
 
-from prwlock import prwlock
+import prwlock
 from multiprocessing import Pool
 
-OLD_PTHREAD_PROCESS_SHARED = prwlock.PTHREAD_PROCESS_SHARED
+OLD_PTHREAD_PROCESS_SHARED = prwlock.get_pthread_process_shared()
 
 class BaseTestCase(unittest.TestCase):
     def setUp(self):
         self.rwlock = prwlock.RWLock()
 
     def tearDown(self):
-        prwlock.PTHREAD_PROCESS_SHARED = OLD_PTHREAD_PROCESS_SHARED
+        prwlock.set_pthread_process_shared(OLD_PTHREAD_PROCESS_SHARED)
 
 class RWLockTestCase(BaseTestCase):
 
@@ -80,7 +80,7 @@ class RWLockTestCase(BaseTestCase):
         self.assertTrue(all([r.successful() for r in ret]))
 
     def test_wrong_constant(self):
-        prwlock.PTHREAD_PROCESS_SHARED = 0xbeef
+        prwlock.set_pthread_process_shared(0xbeef)
         with self.assertRaises(OSError):
             prwlock.RWLock()
 
