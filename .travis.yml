@@ -5,7 +5,6 @@ python:
     - "3.5"
     - "nightly"
 os:
-    - osx
     - linux
 install: "pip install -r dev-requirements.txt"
 script: "coverage run --source=./prwlock setup.py test"
