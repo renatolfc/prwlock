@@ -12,12 +12,18 @@ from codecs import open
 from os import path
 
 import prwlock
+import platform
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
+
+if platform.system() == 'Windows':
+    test_module = 'prwlock.tests.test_wrwlock'
+else:
+    test_module = 'prwlock.tests.test_prwlock'
 
 setup(
     name='prwlock',
@@ -48,5 +54,5 @@ setup(
     ],
     keywords='rwlock posix process-shared process',
     packages=find_packages(),
-    test_suite='prwlock.tests',
+    test_suite=test_module,
 )
