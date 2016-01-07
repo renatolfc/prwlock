@@ -10,7 +10,7 @@ __all__ = []
 if platform.system() == 'Windows':
     from wrwlock import RWLockWindows as RWLock
 else:
-    import prwlock as _prwlock
+    from . import prwlock as _prwlock
 
     def set_pthread_process_shared(n_process):
         """
