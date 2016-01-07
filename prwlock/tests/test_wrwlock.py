@@ -16,7 +16,7 @@ class RWLockTestCase(BaseTestCase):
 
     def test_double_release(self):
         with self.assertRaises(ValueError):
-            self.rwlock.release_read()
+            self.rwlock.release()
 
     def test_serialization(self):
         pickle.dumps(self.rwlock)
@@ -29,12 +29,12 @@ class RWLockTestCase(BaseTestCase):
 
     def test_read_release(self):
         self.rwlock.acquire_read()
-        self.rwlock.release_read()
+        self.rwlock.release()
         self.assertTrue(True)
 
     def test_write_release(self):
         self.rwlock.acquire_write()
-        self.rwlock.release_write()
+        self.rwlock.release()
         self.assertTrue(True)
 
     def test_child_interaction(self):
@@ -44,7 +44,7 @@ class RWLockTestCase(BaseTestCase):
         time.sleep(.1)
         self.rwlock.acquire_write()
         time.sleep(4)
-        self.rwlock.release_write()
+        self.rwlock.release()
         pool.close()
         pool.join()
         self.assertTrue(all([r.successful() for r in ret]))
@@ -53,5 +53,5 @@ class RWLockTestCase(BaseTestCase):
 def f(rwlock):
     rwlock.acquire_read()
     time.sleep(1)
-    rwlock.release_read()
+    rwlock.release()
     time.sleep(.1)

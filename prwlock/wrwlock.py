@@ -75,17 +75,17 @@ class RWLockWindows(object):
             rd_mutex = wintypes.HANDLE.from_buffer(buf, offset)
             offset += offset
 
-            # Number of readers and the flag that indicates whether readers
-            # are blocked must be shared by processes
-            readers_blocked = ctypes.c_bool.from_buffer(buf, offset)
-            offset += ctypes.sizeof(ctypes.c_bool)
+            # Number of readers and the ID of the process that holds
+            # the writer mutex; it has value 0 if the mutex is not taken
+            writer_pid = ctypes.c_int.from_buffer(buf, offset)
+            offset += ctypes.sizeof(ctypes.c_int)
             n_readers = ctypes.c_int.from_buffer(buf, offset)
 
             if _mtag is None:
                 sa = _SECURITY_ATTRIBUTES(ctypes.sizeof(_SECURITY_ATTRIBUTES), None, True)
                 rd_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False, "mt-rd-%d" % os.getpid())
                 wr_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False, "mt-wr-%d" % os.getpid())
-                readers_blocked.value = False
+                writer_pid.value = 0
                 n_readers.value = 0
 
             # Finally initialize this instance's members
@@ -93,7 +93,7 @@ class RWLockWindows(object):
             self._rd_mutex = rd_mutex
             self._wr_mutex = wr_mutex
             self._mtag = mtag
-            self._readers_blocked = readers_blocked
+            self._writer_pid = writer_pid
             self._n_readers = n_readers
         except:
             if rd_mutex:
@@ -110,25 +110,16 @@ class RWLockWindows(object):
     def acquire_read(self):
         while True:
             k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
-            if not self._readers_blocked.value:
+            if self._writer_pid.value == 0:
                 self._n_readers.value += 1
                 k32.ReleaseMutex(self._rd_mutex.value)
                 return
             k32.ReleaseMutex(self._rd_mutex.value)
 
-    def release_read(self):
-        k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
-        if self._n_readers.value == 0:
-            raise ValueError(
-                'Tried to release a released lock'
-            )
-        self._n_readers.value -= 1
-        k32.ReleaseMutex(self._rd_mutex.value)
-
     def _wait_readers(self):
         # block new readers
         k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
-        self._readers_blocked.value = True
+        self._writer_pid.value = int(self.pid)
         k32.ReleaseMutex(self._rd_mutex.value)
 
         # Wait until active readers complete
@@ -143,11 +134,20 @@ class RWLockWindows(object):
         k32.WaitForSingleObject(self._wr_mutex.value, INFINITE)
         self._wait_readers()
 
-    def release_write(self):
+    def release(self):
         k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
-        self._readers_blocked.value = False
-        k32.ReleaseMutex(self._rd_mutex.value)
-        k32.ReleaseMutex(self._wr_mutex.value)
+        if self._writer_pid.value != self.pid:
+            if self._n_readers.value == 0:
+                k32.ReleaseMutex(self._rd_mutex.value)
+                raise ValueError(
+                    'Tried to release a released lock'
+                )
+            self._n_readers.value -= 1
+            k32.ReleaseMutex(self._rd_mutex.value)
+        else:
+            self._writer_pid.value = 0
+            k32.ReleaseMutex(self._rd_mutex.value)
+            k32.ReleaseMutex(self._wr_mutex.value)
 
     def __getstate__(self):
         return {'_mtag': self._mtag, 'pid': self.pid}
