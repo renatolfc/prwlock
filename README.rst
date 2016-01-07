@@ -13,11 +13,23 @@ Python that can (*must*, actually) be used for locking across multiple Python pr
 The rationale and initial implementation of the project can be found in the
 `accompanying blog post <https://renatocunha.com/blog/2015/11/ctypes-mmap-rwlock/>`_.
 
+Installation
+------------
+
+This package is `available on PyPi
+<https://pypi.python.org/pypi/prwlock>`_, so you can install the latest stable
+release with a simple `pip` call:
+
+.. code-block:: bash
+
+    $ pip install prwlock
+
 Usage
 -----
 
-There is no need for initialization. Therefore, a code block such as the one below is
-enough to get an RWLock instance.
+All you have to do is import the module and start using it. There is no need
+for initialization. Therefore, a code block such as the one below is enough to
+get an RWLock instance.
 
 .. code-block:: python
 
@@ -52,6 +64,12 @@ such as in the code block below.
     pool = Pool(processes=children)
     for child in range(children):
         pool.apply_async(f, [r])
+
+Contributors
+------------
+
+ * `Renato Cunha <https://renatocunha.com>`_
+ * `Marcos Assunção <https://marcosassuncao.com>`_
 
 Changes
 -------
