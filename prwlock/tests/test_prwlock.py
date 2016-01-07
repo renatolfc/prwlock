@@ -9,7 +9,9 @@ import unittest
 import prwlock
 from multiprocessing import Pool
 
+
 OLD_PTHREAD_PROCESS_SHARED = prwlock.get_pthread_process_shared()
+
 
 class BaseTestCase(unittest.TestCase):
     def setUp(self):
@@ -17,6 +19,7 @@ class BaseTestCase(unittest.TestCase):
 
     def tearDown(self):
         prwlock.set_pthread_process_shared(OLD_PTHREAD_PROCESS_SHARED)
+
 
 class RWLockTestCase(BaseTestCase):
 
@@ -70,7 +73,8 @@ class RWLockTestCase(BaseTestCase):
     def test_child_interaction(self):
         children = 10
         pool = Pool(processes=children)
-        ret = [pool.apply_async(f, args=[self.rwlock]) for i in range(children)]
+        ret = [pool.apply_async(f, args=[self.rwlock])
+               for i in range(children)]
         time.sleep(.1)
         self.rwlock.acquire_write()
         time.sleep(2)
@@ -83,6 +87,7 @@ class RWLockTestCase(BaseTestCase):
         prwlock.set_pthread_process_shared(0xbeef)
         with self.assertRaises(OSError):
             prwlock.RWLock()
+
 
 def f(rwlock):
     for i in range(2):

@@ -9,16 +9,17 @@ import platform  # To figure which architecture we're running in
 if platform.system() is not 'Windows':
     raise Exception("Unsupported operating system.")
 
-from ctypes import windll, wintypes, Structure
+from ctypes import windll, wintypes, Structure  # nopep8
 k32 = windll.kernel32
 
 # Augment the Win32 functions we need
 API_W32 = [
-    ('CreateMutexA', [wintypes.LPCVOID, wintypes.BOOL, wintypes.LPCSTR], wintypes.HANDLE),
+    ('CreateMutexA', [wintypes.LPCVOID, wintypes.BOOL, wintypes.LPCSTR], wintypes.HANDLE),  # nopep8
     ('WaitForSingleObject', [wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
     ('ReleaseMutex', [wintypes.HANDLE], wintypes.BOOL),
     ('CloseHandle', [wintypes.HANDLE], wintypes.BOOL)
 ]
+
 
 def augment_function(library, name, argtypes, restype):
     function = getattr(library, name)
@@ -34,10 +35,13 @@ INFINITE = 0xFFFFFFFF
 # We need to provide security attributes that allow the mutexes to be
 # shared by the synchronized processes. For more detail, see:
 # https://msdn.microsoft.com/en-us/library/windows/desktop/aa379560(v=vs.85).aspx
+
+
 class _SECURITY_ATTRIBUTES(Structure):
-    _fields_= [("nLength", wintypes.DWORD),
-               ("lpSecurityDescriptor", wintypes.LPVOID),
-               ("bInheritHandle", wintypes.BOOL)]
+    _fields_ = [("nLength", wintypes.DWORD),
+                ("lpSecurityDescriptor", wintypes.LPVOID),
+                ("bInheritHandle", wintypes.BOOL)]
+
 
 class RWLockWindows(object):
     def __init__(self):
@@ -60,9 +64,9 @@ class RWLockWindows(object):
             # but an alternative is to use named shared memory:
             # https://msdn.microsoft.com/en-us/library/windows/desktop/aa366551(v=vs.85).aspx
             # Setting the underlying mmap fd to 0, will force it to use named
-            # shared memory accessible via the provided memory tag.
-            # Also, mmap allocates page sized chunks, and the data structures we
-            # use are smaller than a page. Therefore, we request a whole page
+            # shared memory accessible via the provided memory tag.  Also, mmap
+            # allocates page sized chunks, and the data structures we use are
+            # smaller than a page. Therefore, we request a whole page
             buf = mmap.mmap(0, mmap.PAGESIZE, mtag)
 
             if _mtag:
@@ -82,9 +86,12 @@ class RWLockWindows(object):
             n_readers = ctypes.c_int.from_buffer(buf, offset)
 
             if _mtag is None:
-                sa = _SECURITY_ATTRIBUTES(ctypes.sizeof(_SECURITY_ATTRIBUTES), None, True)
-                rd_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False, "mt-rd-%d" % os.getpid())
-                wr_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False, "mt-wr-%d" % os.getpid())
+                sa = _SECURITY_ATTRIBUTES(ctypes.sizeof(_SECURITY_ATTRIBUTES),
+                                          None, True)
+                rd_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False,
+                                                  "mt-rd-%d" % os.getpid())
+                wr_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False,
+                                                  "mt-wr-%d" % os.getpid())
                 writer_pid.value = 0
                 n_readers.value = 0
 
