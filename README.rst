@@ -74,6 +74,9 @@ Contributors
 Changes
 -------
 
+* 0.2.0: Added support for RWLocks on Windows XP and above. Changed the API so
+  that the lock can be imported as `from prwlock import RWLock`, instead of the
+  slightly awkward `from prwlock.prwlock import RWLock` method.
 * 0.1.1: Fixed the value of the `PTHREAD_PROCESS_SHARED` constant for Mac OS
   X. Also added a check to prevent double destruction of the underlying lock
   on Mac OS X.
