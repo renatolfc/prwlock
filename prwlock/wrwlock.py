@@ -5,6 +5,7 @@ import os        # For strerror
 import mmap      # For setting up a shared memory region
 import ctypes    # For doing the actual wrapping of librt & rwlock
 import platform  # To figure which architecture we're running in
+import time
 
 if platform.system() is not 'Windows':
     raise Exception("Unsupported operating system.")
@@ -16,6 +17,7 @@ k32 = windll.kernel32
 API_W32 = [
     ('CreateMutexA', [wintypes.LPCVOID, wintypes.BOOL, wintypes.LPCSTR], wintypes.HANDLE),  # nopep8
     ('WaitForSingleObject', [wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
+    ('WaitForMultipleObjects', [wintypes.DWORD, wintypes.LPVOID, wintypes.BOOL, wintypes.DWORD], wintypes.DWORD),
     ('ReleaseMutex', [wintypes.HANDLE], wintypes.BOOL),
     ('CloseHandle', [wintypes.HANDLE], wintypes.BOOL)
 ]
@@ -30,6 +32,37 @@ for function, argtypes, restype in API_W32:
     augment_function(k32, function, argtypes, restype)
 
 INFINITE = 0xFFFFFFFF
+SHORT_SLEEP = 0.1
+
+def _acquire_mutex(handle, milliseconds=INFINITE):
+    r = k32.WaitForSingleObject(handle, milliseconds)
+    if r in (0, 0x80):
+        # No distinction is made between normally acquired (0) and acquired
+        # because another owning process terminated without releasing (0x80)
+        return True
+    elif r == 0x102:
+        # Timeout
+        return False
+    else:
+        # Wait failed
+        raise ctypes.WinError()
+
+def _acquire_mutexes(handles, milliseconds=INFINITE, wait_all=True):
+    n_handles = len(handles)
+    handle_array_type = ctypes.c_void_p * n_handles
+    handles = handle_array_type(*handles)
+    r = k32.WaitForMultipleObjects(n_handles, handles, bool(wait_all), milliseconds)
+    if 0x0 <= r <= n_handles-1 or 0x80 <= r <= 0x80 + n_handles-1:
+        # No distinction is made between normally acquired (0) and acquired
+        # because another owning process terminated without releasing (0x80)
+        return True
+    elif r == 0x102:
+        # Timeout
+        return False
+    else:
+        # Wait failed
+        raise ctypes.WinError()
+
 
 # By default, mutexes are not inherited when a new process is created.
 # We need to provide security attributes that allow the mutexes to be
@@ -114,35 +147,47 @@ class RWLockWindows(object):
                     pass
             raise
 
-    def acquire_read(self):
+    def acquire_read(self, timeout=None):
+        time_wait = 0.0
         while True:
-            k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
-            if self._writer_pid.value == 0:
-                self._n_readers.value += 1
+            if _acquire_mutex(self._rd_mutex.value, 0):
+                if self._writer_pid.value == 0:
+                    self._n_readers.value += 1
+                    k32.ReleaseMutex(self._rd_mutex.value)
+                    return True
                 k32.ReleaseMutex(self._rd_mutex.value)
-                return
-            k32.ReleaseMutex(self._rd_mutex.value)
+            if timeout is not None and time_wait >= timeout:
+                return False
+            time.sleep(SHORT_SLEEP)
+            time_wait += SHORT_SLEEP
 
     def _wait_readers(self):
         # block new readers
-        k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
+        #_acquire_mutex(self._rd_mutex.value)
         self._writer_pid.value = int(self.pid)
         k32.ReleaseMutex(self._rd_mutex.value)
 
         # Wait until active readers complete
         while True:
-            k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
+            _acquire_mutex(self._rd_mutex.value)
             if self._n_readers.value == 0:
                 k32.ReleaseMutex(self._rd_mutex.value)
                 break
             k32.ReleaseMutex(self._rd_mutex.value)
+            time.sleep(SHORT_SLEEP)
 
-    def acquire_write(self):
-        k32.WaitForSingleObject(self._wr_mutex.value, INFINITE)
-        self._wait_readers()
+    def acquire_write(self, timeout=None):
+        milliseconds = INFINITE if timeout is None else int(timeout * 1000)
+        # Timeout is used to acquire both writer and reader mutexes, but the
+        # method still needs to wait for readers to complete before returning
+        if _acquire_mutexes([self._wr_mutex.value, self._rd_mutex.value], milliseconds):
+            self._wait_readers()
+            return True
+        else:
+            return False
 
     def release(self):
-        k32.WaitForSingleObject(self._rd_mutex.value, INFINITE)
+        _acquire_mutex(self._rd_mutex.value)
         if self._writer_pid.value != self.pid:
             if self._n_readers.value == 0:
                 k32.ReleaseMutex(self._rd_mutex.value)
