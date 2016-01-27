@@ -148,9 +148,16 @@ class RWLockWindows(object):
             raise
 
     def acquire_read(self, timeout=None):
+        """acquire_read([timeout=None])
+
+        Request a read lock, returning True if the lock is acquired;
+        False otherwise. If provided, *timeout* specifies the number of
+        seconds to wait for the lock before cancelling and returning False.
+        """
+        milliseconds = INFINITE if timeout is None else int(0)
         time_wait = 0.0
         while True:
-            if _acquire_mutex(self._rd_mutex.value, 0):
+            if _acquire_mutex(self._rd_mutex.value, milliseconds):
                 if self._writer_pid.value == 0:
                     self._n_readers.value += 1
                     k32.ReleaseMutex(self._rd_mutex.value)
@@ -160,6 +167,12 @@ class RWLockWindows(object):
                 return False
             time.sleep(SHORT_SLEEP)
             time_wait += SHORT_SLEEP
+
+    def try_acquire_read(self):
+        """Try to obtain a read lock, immediately returning True if
+        the lock is acquired; False otherwise.
+        """
+        return self.acquire_read(timeout=0.0)
 
     def _wait_readers(self):
         # block new readers
@@ -177,6 +190,12 @@ class RWLockWindows(object):
             time.sleep(SHORT_SLEEP)
 
     def acquire_write(self, timeout=None):
+        """acquire_write([timeout=None])
+
+        Request a write lock, returning True if the lock is acquired;
+        False otherwise. If provided, *timeout* specifies the number of
+        seconds to wait for the lock before cancelling and returning False.
+        """
         milliseconds = INFINITE if timeout is None else int(timeout * 1000)
         # Timeout is used to acquire both writer and reader mutexes, but the
         # method still needs to wait for readers to complete before returning
@@ -186,7 +205,16 @@ class RWLockWindows(object):
         else:
             return False
 
+    def try_acquire_write(self):
+        """Try to obtain a write lock. Wait until processes that hold read
+        locks complete before returning True. Return False immediately if
+        the lock cannot be acquired.
+        """
+        return self.acquire_write(timeout=0.0)
+
     def release(self):
+        """Release a previously acquired read/write lock.
+        """
         _acquire_mutex(self._rd_mutex.value)
         if self._writer_pid.value != self.pid:
             if self._n_readers.value == 0:
