@@ -8,6 +8,7 @@ import unittest
 
 import prwlock
 from multiprocessing import Pool
+import multiprocessing as mp
 
 
 OLD_PTHREAD_PROCESS_SHARED = prwlock.get_pthread_process_shared()
@@ -88,6 +89,29 @@ class RWLockTestCase(BaseTestCase):
         with self.assertRaises(OSError):
             prwlock.RWLock()
 
+    def acquire_lock(self, function, rwlock, queue, expected_result=True):
+        p = mp.Process(target=function, args=(rwlock, queue,))
+        p.start()
+        if expected_result:
+            self.assertTrue(queue.get())
+        else:
+            self.assertFalse(queue.get())
+        p.join()
+
+    def test_timeout(self):
+        # Lock write first
+        self.rwlock.acquire_write()
+        q = mp.Queue()
+        # Test acquire read timeout
+        self.acquire_lock(acquire_read_timeout, self.rwlock, q, False)
+        # test acquire write timeout
+        self.acquire_lock(acquire_write_timeout, self.rwlock, q, False)
+        # Release lock and try again
+        self.rwlock.release()
+        # Now try to get read lock
+        self.acquire_lock(acquire_read_timeout, self.rwlock, q, True)
+        # test acquire write timeout
+        self.acquire_lock(acquire_write_timeout, self.rwlock, q, True)
 
 def f(rwlock):
     for i in range(2):
@@ -95,3 +119,17 @@ def f(rwlock):
         time.sleep(1)
         rwlock.release()
         time.sleep(.1)
+
+
+def acquire_read_timeout(rwlock, queue):
+    ret = rwlock.acquire_read(.3)
+    queue.put(ret)
+    if ret:
+        rwlock.release()
+
+
+def acquire_write_timeout(rwlock, queue):
+    ret = rwlock.acquire_write(.3)
+    queue.put(ret)
+    if ret:
+        rwlock.release()
