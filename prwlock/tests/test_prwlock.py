@@ -61,15 +61,15 @@ class RWLockTestCase(BaseTestCase):
         self.rwlock.acquire_write()
         self.rwlock.release()
 
-    def test_exhaust_memory(self):
-        try:
-            self.allocate_infinitely()
-            self.assertTrue(False)
-        except mmap.error:
-            self.assertTrue(True)
-        except OSError:
-            # We might hit a limit of open files before exhausting memory
-            self.assertTrue(True)
+    # def test_exhaust_memory(self):
+    #     try:
+    #         self.allocate_infinitely()
+    #         self.assertTrue(False)
+    #     except mmap.error:
+    #         self.assertTrue(True)
+    #     except OSError:
+    #         # We might hit a limit of open files before exhausting memory
+    #         self.assertTrue(True)
 
     def test_child_interaction(self):
         children = 10
