@@ -218,7 +218,7 @@ class RWLockPosix(object):
         while seconds > 0.0:
             if librt.pthread_rwlock_tryrdlock(self._lock_p) == 0:
                 return True
-            sleep(SHORT_SLEEP)
+            sleep(min(SHORT_SLEEP, seconds))
             seconds -= SHORT_SLEEP
         return False
 
@@ -226,7 +226,7 @@ class RWLockPosix(object):
         while seconds > 0.0:
             if librt.pthread_rwlock_trywrlock(self._lock_p) == 0:
                 return True
-            sleep(SHORT_SLEEP)
+            sleep(min(SHORT_SLEEP, seconds))
             seconds -= SHORT_SLEEP
         return False
 
