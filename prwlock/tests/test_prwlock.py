@@ -113,6 +113,17 @@ class RWLockTestCase(BaseTestCase):
         # test acquire write timeout
         self.acquire_lock(acquire_write_timeout, self.rwlock, q, True)
 
+    def test_try_acquire(self):
+        # Lock write first
+        self.rwlock.acquire_write()
+        q = mp.Queue()
+        self.acquire_lock(try_acquire_write, self.rwlock, q, False)
+        self.acquire_lock(try_acquire_read, self.rwlock, q, False)
+        # Release lock and try again
+        self.rwlock.release()
+        self.acquire_lock(try_acquire_write, self.rwlock, q, True)
+        self.acquire_lock(try_acquire_read, self.rwlock, q, True)
+
 def f(rwlock):
     for i in range(2):
         rwlock.acquire_read()
@@ -130,6 +141,20 @@ def acquire_read_timeout(rwlock, queue):
 
 def acquire_write_timeout(rwlock, queue):
     ret = rwlock.acquire_write(.3)
+    queue.put(ret)
+    if ret:
+        rwlock.release()
+
+
+def try_acquire_write(rwlock, queue):
+    ret = rwlock.try_acquire_write()
+    queue.put(ret)
+    if ret:
+        rwlock.release()
+
+
+def try_acquire_read(rwlock, queue):
+    ret = rwlock.try_acquire_read()
     queue.put(ret)
     if ret:
         rwlock.release()

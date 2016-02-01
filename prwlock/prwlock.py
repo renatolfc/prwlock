@@ -202,29 +202,29 @@ class RWLockPosix(object):
                     pass
             raise
 
-    def _pthread_timedrdlock(self, lock_p, seconds):
+    def _pthread_timedrdlock(self, seconds):
         ts = get_timespec(seconds)
-        if librt.pthread_rwlock_timedrdlock(lock_p, ctypes.byref(ts)) == errno.ETIMEDOUT:
+        if librt.pthread_rwlock_timedrdlock(self._lock_p, ctypes.byref(ts)) == errno.ETIMEDOUT:
             return False
         return True
 
-    def _pthread_timedwrlock(self, lock_p, seconds):
+    def _pthread_timedwrlock(self, seconds):
         ts = get_timespec(seconds)
-        if librt.pthread_rwlock_timedwrlock(lock_p, ctypes.byref(ts)) == errno.ETIMEDOUT:
+        if librt.pthread_rwlock_timedwrlock(self._lock_p, ctypes.byref(ts)) == errno.ETIMEDOUT:
             return False
         return True
 
-    def _loop_timedrdlock(self, lock_p, seconds):
+    def _loop_timedrdlock(self, seconds):
         while seconds > 0.0:
-            if librt.pthread_rwlock_tryrdlock(lock_p) == 0:
+            if librt.pthread_rwlock_tryrdlock(self._lock_p) == 0:
                 return True
             sleep(SHORT_SLEEP)
             seconds -= SHORT_SLEEP
         return False
 
-    def _loop_timedwrlock(self, lock_p, seconds):
+    def _loop_timedwrlock(self, seconds):
         while seconds > 0.0:
-            if librt.pthread_rwlock_trywrlock(lock_p) == 0:
+            if librt.pthread_rwlock_trywrlock(self._lock_p) == 0:
                 return True
             sleep(SHORT_SLEEP)
             seconds -= SHORT_SLEEP
@@ -233,7 +233,7 @@ class RWLockPosix(object):
     def acquire_read(self, timeout=None):
         if timeout is None:
             librt.pthread_rwlock_rdlock(self._lock_p)
-        elif not self._timed_rdlock(self._lock_p, timeout):
+        elif not self._timed_rdlock(timeout):
             return False
         self.nlocks += 1
         return True
@@ -241,10 +241,24 @@ class RWLockPosix(object):
     def acquire_write(self, timeout=None):
         if timeout is None:
             librt.pthread_rwlock_wrlock(self._lock_p)
-        elif not self._timed_wrlock(self._lock_p, timeout):
+        elif not self._timed_wrlock(timeout):
             return False
         self.nlocks += 1
         return True
+
+    def try_acquire_read(self):
+        if librt.pthread_rwlock_tryrdlock(self._lock_p) == 0:
+            self.nlocks += 1
+            return True
+        else:
+            return False
+
+    def try_acquire_write(self):
+        if librt.pthread_rwlock_trywrlock(self._lock_p) == 0:
+            self.nlocks += 1
+            return True
+        else:
+            return False
 
     def release(self):
         if self.nlocks == 0:
