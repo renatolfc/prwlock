@@ -231,6 +231,12 @@ class RWLockPosix(object):
         return False
 
     def acquire_read(self, timeout=None):
+        """acquire_read([timeout=None])
+
+        Request a read lock, returning True if the lock is acquired;
+        False otherwise. If provided, *timeout* specifies the number of
+        seconds to wait for the lock before cancelling and returning False.
+        """
         if timeout is None:
             librt.pthread_rwlock_rdlock(self._lock_p)
         elif not self._timed_rdlock(timeout):
@@ -239,6 +245,12 @@ class RWLockPosix(object):
         return True
 
     def acquire_write(self, timeout=None):
+        """acquire_write([timeout=None])
+
+        Request a write lock, returning True if the lock is acquired;
+        False otherwise. If provided, *timeout* specifies the number of
+        seconds to wait for the lock before cancelling and returning False.
+        """
         if timeout is None:
             librt.pthread_rwlock_wrlock(self._lock_p)
         elif not self._timed_wrlock(timeout):
@@ -247,6 +259,9 @@ class RWLockPosix(object):
         return True
 
     def try_acquire_read(self):
+        """Try to obtain a read lock, immediately returning True if
+        the lock is acquired; False otherwise.
+        """
         if librt.pthread_rwlock_tryrdlock(self._lock_p) == 0:
             self.nlocks += 1
             return True
@@ -254,6 +269,9 @@ class RWLockPosix(object):
             return False
 
     def try_acquire_write(self):
+        """Try to obtain a write lock, returning True immediately if
+        the lock can be acquired; False otherwise.
+        """
         if librt.pthread_rwlock_trywrlock(self._lock_p) == 0:
             self.nlocks += 1
             return True
@@ -261,6 +279,8 @@ class RWLockPosix(object):
             return False
 
     def release(self):
+        """Release a previously acquired read/write lock.
+        """
         if self.nlocks == 0:
             raise ValueError(
                 'Tried to release a released lock'
