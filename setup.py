@@ -31,8 +31,8 @@ setup(
     description='Native process-shared rwlock support for Python',
     long_description=long_description,
     url='https://bitbucket.org/prwlock/prwlock',
-    author='Renato Cunha',
-    author_email='erangb@erangbphaun.pbz',
+    author='Renato Cunha, Marcos Assuncao',
+    author_email='erangb@erangbphaun.pbz, nffhapnb@npz.bet',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
