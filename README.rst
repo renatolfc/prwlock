@@ -74,6 +74,9 @@ Contributors
 Changes
 -------
 
+* 0.3.0: Completed the API's implementation. Namely:
+     * Added support for immediate failure when locks cannot be obtained;
+     * Added timeouts for obtaining the locks.
 * 0.2.0: Added support for RWLocks on Windows XP and above. Changed the API so
   that the lock can be imported as `from prwlock import RWLock`, instead of the
   slightly awkward `from prwlock.prwlock import RWLock` method.

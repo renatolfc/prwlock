@@ -2,7 +2,7 @@
 
 import platform
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 # Note: names are added to __all__ depending on what system we're on
 __all__ = []
