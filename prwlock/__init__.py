@@ -7,7 +7,6 @@ __version__ = '0.3.0'
 # Note: names are added to __all__ depending on what system we're on
 __all__ = []
 
-
 if platform.system() == 'Windows':
     from wrwlock import RWLockWindows as RWLock
 else:
