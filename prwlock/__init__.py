@@ -35,33 +35,34 @@ else:
         RWLock = _prwlock.RWLockPosix
 
 # Monkey patch resolved RWLock class to implement __enter__ and __exit__
-class ReaderLock(object):
-    def __init__(self, lock, timeout=None):
+class GenericLockContextManager(object):
+    def __init__(self, lock, method, timeout=None):
         self.lock = lock
+        self.locked = False
+        self.method = method
         self.timeout = timeout
+        if method not in ['read', 'write']:
+            raise ValueError('GenericLock called with invalid method %s'
+                             % self.method)
 
     def __enter__(self):
-        self.lock.acquire_read(timeout=self.timeout)
+        locker = getattr(self.lock, 'acquire_' + self.method)
+        self.locked = locker(timeout=self.timeout)
+        if not self.locked:
+            # We have to return from the __enter__ method, but we failed to
+            # acquire the lock. The only thing we can do is to fail
+            raise ValueError('Unable to acquire lock in context manager')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.lock.release()
-
-class WriterLock(object):
-    def __init__(self, lock, timeout=None):
-        self.lock = lock
-        self.timeout = timeout
-
-    def __enter__(self):
-        self.lock.acquire_write(timeout=self.timeout)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.lock.release()
+        if self.locked:
+            self.lock.release()
+        self.locked = False
 
 def reader_lock(self, timeout=None):
-    return ReaderLock(self, timeout=timeout)
+    return GenericLockContextManager(self, 'read', timeout=timeout)
 
 def writer_lock(self, timeout=None):
-    return WriterLock(self, timeout=None)
+    return GenericLockContextManager(self, 'write', timeout=timeout)
 
 
 RWLock.reader_lock = reader_lock
