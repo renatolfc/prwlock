@@ -36,7 +36,7 @@ else:
 
 # Monkey patch resolved RWLock class to implement __enter__ and __exit__
 class ReaderLock(object):
-    def __init__(self, lock: RWLock, timeout=None):
+    def __init__(self, lock, timeout=None):
         self.lock = lock
         self.timeout = timeout
 
@@ -47,7 +47,7 @@ class ReaderLock(object):
         self.lock.release()
 
 class WriterLock(object):
-    def __init__(self, lock: RWLock, timeout=None):
+    def __init__(self, lock, timeout=None):
         self.lock = lock
         self.timeout = timeout
 
