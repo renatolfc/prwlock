@@ -124,6 +124,19 @@ class RWLockTestCase(BaseTestCase):
         self.acquire_lock(try_acquire_write, self.rwlock, q, True)
         self.acquire_lock(try_acquire_read, self.rwlock, q, True)
 
+    def test_context_managers(self):
+        accessed_protected_area = False
+        with self.rwlock.reader_lock(timeout=1):
+            pass
+        with self.rwlock.writer_lock(timeout=1):
+            pass
+        with self.assertRaises(ValueError):
+            with self.rwlock.reader_lock(timeout=.1):
+                with self.rwlock.writer_lock(timeout=.1):
+                    accessed_protected_area = True
+        self.assertFalse(accessed_protected_area)
+
+
 def f(rwlock):
     for i in range(2):
         rwlock.acquire_read()
