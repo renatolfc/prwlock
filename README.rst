@@ -65,11 +65,34 @@ such as in the code block below.
     for child in range(children):
         pool.apply_async(f, [r])
 
+Context Managers
+^^^^^^^^^^^^^^^^^
+
+`prwlock` also supports context managers using the `with` syntax. The code
+block below displays one possible way of using it.
+
+.. code-block:: python
+
+    from prwlock import RWLock
+
+    # First you instantiate the lock
+    rwlock = RWLock()
+
+    # Now you can lock it in read or in write mode
+    with rwlock.reader_lock():
+        # If this executes, then reader lock access has been acquired
+        print('Reading data')
+
+    # Likewise, you can lock in writer mode with:
+    with rwlock.writer_lock():
+        print('Writing data')
+
 Contributors
 ------------
 
  * `Renato Cunha <https://renatocunha.com>`_
  * `Marcos Assunção <https://marcosassuncao.com>`_
+ * `Vyronas Tsingaras <https://vtsingaras.me/>`_
 
 Changes
 -------
