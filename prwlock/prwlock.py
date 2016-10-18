@@ -59,7 +59,7 @@ API = [
     ('pthread_rwlock_init', [pthread_rwlock_t_p, pthread_rwlockattr_t_p], default_error_check),
     ('pthread_rwlock_unlock', [pthread_rwlock_t_p], default_error_check),
     ('pthread_rwlock_wrlock', [pthread_rwlock_t_p], default_error_check),
-    # The normal callback-based error checking traps the GIT into
+    # The normal callback-based error checking traps the GIL into
     # possible deadlocks under Mac OS X. Hence, avoid default error checking for
     # pthread_rwlock_tryrdlock and pthread_rwlock_trywrlock
     ('pthread_rwlock_tryrdlock', [pthread_rwlock_t_p], None),
