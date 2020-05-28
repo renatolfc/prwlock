@@ -1,11 +1,11 @@
 Process-shared Reader-Writer locks for Python
 =============================================
 
-.. image:: https://travis-ci.org/trovao/prwlock.svg
-    :target: https://travis-ci.org/trovao/prwlock
+.. image:: https://travis-ci.org/renatolfc/prwlock.svg
+    :target: https://travis-ci.org/renatolfc/prwlock
 
-.. image:: https://coveralls.io/repos/trovao/prwlock/badge.svg?branch=master&service=github
-    :target: https://coveralls.io/github/trovao/prwlock?branch=master
+.. image:: https://coveralls.io/repos/renatolfc/prwlock/badge.svg?branch=master&service=github
+    :target: https://coveralls.io/github/renatolfc/prwlock?branch=master
 
 A `reader-writer lock <https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock>`_ for
 Python that can (*must*, actually) be used for locking across multiple Python processes.
