@@ -97,6 +97,7 @@ Contributors
 Changes
 -------
 
+* 0.4.1: Fixed bug in which temporary files were left over in $TMPDIR
 * 0.4.0: Added context-management support using the `with` syntax;
 * 0.3.0: Completed the API's implementation. Namely:
      * Added support for immediate failure when locks cannot be obtained;
