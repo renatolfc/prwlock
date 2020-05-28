@@ -136,6 +136,7 @@ class RWLockPosix(object):
                 # multiprocessing module
                 fd, name = tempfile.mkstemp()
                 os.write(fd, b'\0' * mmap.PAGESIZE)
+                os.unlink(name)
 
             # mmap allocates page sized chunks, and the data structures we
             # use are smaller than a page. Therefore, we request a whole
