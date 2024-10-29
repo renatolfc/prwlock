@@ -8,7 +8,7 @@ __version__ = '0.4.1'
 __all__ = []
 
 if platform.system() == 'Windows':
-    from wrwlock import RWLockWindows as RWLock
+    from .wrwlock import RWLockWindows as RWLock
 else:
     from . import prwlock as _prwlock
 
@@ -35,6 +35,8 @@ else:
         RWLock = _prwlock.RWLockPosix
 
 # Monkey patch resolved RWLock class to implement __enter__ and __exit__
+
+
 class GenericLockContextManager(object):
     def __init__(self, lock, method, timeout=None):
         self.lock = lock
@@ -58,8 +60,10 @@ class GenericLockContextManager(object):
             self.lock.release()
         self.locked = False
 
+
 def reader_lock(self, timeout=None):
     return GenericLockContextManager(self, 'read', timeout=timeout)
+
 
 def writer_lock(self, timeout=None):
     return GenericLockContextManager(self, 'write', timeout=timeout)

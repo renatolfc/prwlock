@@ -54,6 +54,7 @@ def default_error_check(result, func, arguments):
         raise OSError(result, '{} failed {}'.format(name, error))
     return arguments
 
+
 API = [
     ('pthread_rwlock_destroy', [pthread_rwlock_t_p], default_error_check),
     ('pthread_rwlock_init', [pthread_rwlock_t_p, pthread_rwlockattr_t_p], default_error_check),
@@ -93,7 +94,7 @@ for function, argtypes, error_check in API:
 class TimeSpec(ctypes.Structure):
     _fields_ = [
         ("tv_sec", time_t),
-        ("tv_nsec", ctypes.c_long) ]
+        ("tv_nsec", ctypes.c_long)]
 
 
 # Create timespec from seconds
@@ -291,10 +292,10 @@ class RWLockPosix(object):
 
     def __getstate__(self):
         return {
-                '_fd': self._fd,
-                'pid': self.pid,
-                'nlocks': self.nlocks,
-                }
+            '_fd': self._fd,
+            'pid': self.pid,
+            'nlocks': self.nlocks,
+        }
 
     def __setstate__(self, state):
         self.__setup(state['_fd'])

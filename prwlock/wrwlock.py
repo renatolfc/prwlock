@@ -29,6 +29,7 @@ def augment_function(library, name, argtypes, restype):
     function.argtypes = argtypes
     function.restype = restype
 
+
 for function, argtypes, restype in API_W32:
     augment_function(k32, function, argtypes, restype)
 
@@ -55,7 +56,7 @@ def acquire_mutexes(handles, milliseconds=INFINITE, wait_all=True):
     handle_array_type = ctypes.c_void_p * n_handles
     handles = handle_array_type(*handles)
     r = k32.WaitForMultipleObjects(n_handles, handles, bool(wait_all), milliseconds)
-    if 0x0 <= r <= n_handles-1 or 0x80 <= r <= 0x80 + n_handles-1:
+    if 0x0 <= r <= n_handles - 1 or 0x80 <= r <= 0x80 + n_handles - 1:
         # No distinction is made between normally acquired (0) and acquired
         # because another owning process terminated without releasing (0x80)
         return True
@@ -124,9 +125,9 @@ class RWLockWindows(object):
             if _mtag is None:
                 sa = SecurityAttributes(ctypes.sizeof(SecurityAttributes), None, True)
                 rd_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False,
-                                                  "mt-rd-%d" % os.getpid())
+                                                  b"mt-rd-%d" % os.getpid())
                 wr_mutex.value = k32.CreateMutexA(ctypes.byref(sa), False,
-                                                  "mt-wr-%d" % os.getpid())
+                                                  b"mt-wr-%d" % os.getpid())
                 writer_pid.value = 0
                 n_readers.value = 0
 
